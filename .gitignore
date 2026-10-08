@@ -1,0 +1,12 @@
+frontend/node_modules/
+frontend/package-lock.json
+backend/node_modules/
+backend/package-lock.json
+backend/.env
+backend/.env.local
+backend/dist/
+frontend-fixed/frontend/node_modules/
+frontend-fixed/frontend/package-lock.json
+backend.zip
+frontend.zip
+frontend-fixed.zip
