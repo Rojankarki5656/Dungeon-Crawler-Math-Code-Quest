@@ -3,6 +3,7 @@ import { PixelPanel } from './pixel/PixelPanel';
 import { PixelButton } from './pixel/PixelButton';
 import { PixelText } from './pixel/PixelText';
 import { ConnectionBadge } from './ConnectionBadge';
+import { useAuthStore } from '@/state/authStore';
 
 interface Props {
   onCreate: (name: string) => void;
@@ -14,6 +15,8 @@ export function LobbyScreen({ onCreate, onJoin, playerName }: Props) {
   const [lobbyName, setLobbyName] = useState('DUNGEON OF ALGORITHMS');
   const [joinCode, setJoinCode] = useState('');
   const [tab, setTab] = useState<'create' | 'join'>('create');
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -87,10 +90,20 @@ export function LobbyScreen({ onCreate, onJoin, playerName }: Props) {
             </div>
           )}
 
-          <div className="mt-5 flex items-center justify-between border-t-2 border-px-border pt-4">
-            <PixelText size="xs" color="#55678a">HERO</PixelText>
-            <PixelText size="xs" color="#ffd166">{playerName}</PixelText>
-          </div>
+      <div className="mt-5 flex items-center justify-between border-t-2 border-px-border pt-4">
+        <div className="flex items-center gap-2">
+          <PixelText size="xs" color="#55678a">HERO</PixelText>
+          <PixelText size="xs" color="#ffd166">{user?.playerName ?? playerName}</PixelText>
+        </div>
+        <button
+          type="button"
+          onClick={logout}
+          className="px-2 py-1 transition-colors"
+          style={{ background: 'rgba(224,65,65,0.1)', border: '2px solid rgba(224,65,65,0.4)' }}
+        >
+          <PixelText size="xs" color="#e04141">LOGOUT</PixelText>
+        </button>
+      </div>
         </PixelPanel>
 
         {/* ---------- HOW TO PLAY ---------- */}

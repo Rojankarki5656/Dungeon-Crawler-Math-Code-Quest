@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 import { ENV } from '@/config/env';
-import { getOrCreatePlayerId, getOrCreatePlayerName } from './storage';
+import { useAuthStore } from '@/state/authStore';
 
 let socket: Socket | null = null;
 
@@ -9,10 +9,11 @@ export interface SocketFactoryOptions {
 }
 
 export function getSocket(opts: SocketFactoryOptions = {}): Socket {
-  if (socket?.connected || socket) return socket;
+  if (socket) return socket;
 
-  const baseUrl = ENV.SOCKET_URL.replace(/\/$/, '');
-  socket = io(`${baseUrl}${ENV.NAMESPACE}`, {
+  const { token, user } = useAuthStore.getState();
+
+  socket = io(`${ENV.SOCKET_URL}${ENV.NAMESPACE}`, {
     path: ENV.SOCKET_PATH,
     transports: ['websocket', 'polling'],
     reconnection: true,
@@ -23,17 +24,21 @@ export function getSocket(opts: SocketFactoryOptions = {}): Socket {
     timeout: 10_000,
     autoConnect: true,
     auth: {
-      playerId: getOrCreatePlayerId(),
-      playerName: getOrCreatePlayerName(),
+      token: token ?? '',
+      playerName: user?.playerName ?? '',
     },
   });
 
   socket.on('connect', () => opts.onStatus?.('online'));
-  socket.on('disconnect', () => opts.onStatus?.('reconnecting'));
+  socket.on('disconnect', () => opts.onStatus?.('offline'));
   socket.io.on('reconnect_attempt', () => opts.onStatus?.('reconnecting'));
   socket.io.on('reconnect', () => opts.onStatus?.('online'));
-  socket.on('connect_error', () => opts.onStatus?.('reconnecting'));
-  socket.io.on('reconnect_failed', () => opts.onStatus?.('offline'));
+  socket.on('connect_error', () => opts.onStatus?.('offline'));
+  socket.on('auth:required', () => {
+    // Server rejected our token — log out and let the auth screen take over.
+    useAuthStore.getState().logout();
+    disconnectSocket();
+  });
 
   return socket;
 }
