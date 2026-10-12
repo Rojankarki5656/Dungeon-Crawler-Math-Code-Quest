@@ -149,3 +149,37 @@ export interface QuestionFetchFailedEvent {
   error: string;
   at: number;
 }
+
+
+export interface User {
+  id: string;
+  email: string;              // lowercased, unique
+  playerName: string;
+  passwordHash: string;       // bcrypt hash
+  createdAt: number;
+  lastLoginAt?: number;
+  totalScore: number;         // cumulative across lobbies (best-effort)
+  gamesPlayed: number;
+}
+
+export interface PublicUser {
+  id: string;
+  email: string;
+  playerName: string;
+  createdAt: number;
+  totalScore: number;
+  gamesPlayed: number;
+}
+
+export interface AuthResult {
+  token: string;
+  user: PublicUser;
+}
+
+export interface JwtPayload {
+  sub: string;                // user id
+  email: string;
+  playerName: string;
+  iat?: number;
+  exp?: number;
+}

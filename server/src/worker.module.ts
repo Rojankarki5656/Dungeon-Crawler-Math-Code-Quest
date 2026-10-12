@@ -11,6 +11,7 @@ import { DungeonModule } from './modules/dungeon/dungeon.module';
 import { LobbyModule } from './modules/lobby/lobby.module';
 import { CombatModule } from './modules/combat/combat.module';
 import { WorkersModule } from './modules/workers/workers.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 /**
  * Worker process — NO HTTP server, NO WebSocket gateway.
@@ -21,6 +22,7 @@ import { WorkersModule } from './modules/workers/workers.module';
     ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate: validateEnv }),
     RedisModule,
     BrokerModule,
+    AuthModule,
     QuestionModule,
     DungeonModule,
     LobbyModule,

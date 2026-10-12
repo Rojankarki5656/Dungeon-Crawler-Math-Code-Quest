@@ -8,6 +8,8 @@ import { QuestionService } from '../question/question.service';
 import { EncounterStore } from './encounter.store';
 import { GROUPS, TOPICS } from '../../common/constants/topics';
 import { PLAYER } from '../../common/constants/game.constants';
+import { AuthService } from '../auth/auth.service';
+
 import type {
   AnswerSubmittedEvent, Encounter, EncounterResolvedEvent,
   EncounterTriggeredEvent, PlayerMovedEvent, RoundResultEvent,
@@ -27,6 +29,7 @@ export class CombatService implements OnModuleInit {
     private readonly dungeon: DungeonService,
     private readonly questions: QuestionService,
     private readonly encounters: EncounterStore,
+    private readonly auth: AuthService,     // ← new
   ) {}
 
   onModuleInit() {
@@ -213,6 +216,14 @@ export class CombatService implements OnModuleInit {
     await this.lobbies.savePlayer(player);
     await this.lobbies.updatePlayerInLobby(encounter.lobbyId, player);
 
+    // Persist the score delta against the user record (fire-and-forget).
+    if (xpGained > 0) {
+      void this.auth.recordScore(player.id, xpGained).catch((e) =>
+        this.logger.warn(`recordScore failed: ${e.message}`),
+      );
+    }
+
+    // ✅ Real payload — every field defined.
     const resolved: EncounterResolvedEvent = {
       encounterId: encounter.id,
       lobbyId: encounter.lobbyId,
@@ -223,6 +234,7 @@ export class CombatService implements OnModuleInit {
       playerScore: player.score,
       xpGained,
     };
+
     await this.broker.publish(TOPICS.ENCOUNTER_RESOLVED, resolved, { safe: true });
     await this.broker.publish(
       TOPICS.LEADERBOARD_UPDATED,

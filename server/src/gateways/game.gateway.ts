@@ -17,6 +17,7 @@ import { BrokerService } from '../infra/broker/broker.service';
 import { TOPICS } from '../common/constants/topics';
 import { TILE, type TileId } from '../common/constants/game.constants';
 import type { PlayerMovedEvent, PlayerState } from '../common/types/domain.types';
+import { AuthService } from '../modules/auth/auth.service';
 
 interface SocketSession {
   playerId: string;
@@ -58,6 +59,7 @@ export class GameGateway
     private readonly combat: CombatService,
     private readonly questions: QuestionService,
     private readonly broker: BrokerService,
+    private readonly auth: AuthService,       // ← new
   ) {}
 
   // =======================================================================
@@ -122,18 +124,42 @@ export class GameGateway
   // =======================================================================
   // CONNECTION
   // =======================================================================
-  handleConnection(client: Socket) {
-    const playerId = (client.handshake.auth?.playerId as string) ?? randomUUID();
-    const playerName =
-      (client.handshake.auth?.playerName as string) ?? `HERO-${playerId.slice(0, 4)}`;
+  async handleConnection(client: Socket) {
+    const token = client.handshake.auth?.token as string | undefined;
 
-    this.sessions.set(client.id, { playerId, playerName, lastSeq: 0, moveWindow: [] });
+    // Reject unauthenticated sockets immediately.
+    if (!token) {
+      this.logger.warn(`Socket ${client.id} rejected: no token`);
+      client.emit('auth:required', { reason: 'MISSING_TOKEN' });
+      client.disconnect(true);
+      return;
+    }
+
+    const user = await this.auth.verifyToken(token);
+    if (!user) {
+      this.logger.warn(`Socket ${client.id} rejected: invalid token`);
+      client.emit('auth:required', { reason: 'INVALID_TOKEN' });
+      client.disconnect(true);
+      return;
+    }
+
+    // Bind the session to the authenticated user.
+    this.sessions.set(client.id, {
+      playerId: user.id,
+      playerName: user.playerName,
+      lastSeq: 0,
+      moveWindow: [],
+    });
 
     client.emit('session:ready', {
-      playerId, playerName, socketId: client.id,
+      playerId: user.id,
+      playerName: user.playerName,
+      email: user.email,
+      socketId: client.id,
       serverTime: Date.now(),
     });
-    this.logger.log(`Client connected: ${client.id} (player=${playerId})`);
+
+    this.logger.log(`Client connected: ${client.id} (user=${user.playerName})`);
   }
 
   async handleDisconnect(client: Socket) {

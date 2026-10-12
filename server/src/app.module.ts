@@ -15,6 +15,7 @@ import { CombatModule } from './modules/combat/combat.module';
 
 import { GameGateway } from './gateways/game.gateway';
 import { GatewayFanoutConsumer } from './gateways/gateway-fanout.consumer';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { GatewayFanoutConsumer } from './gateways/gateway-fanout.consumer';
     }),
     RedisModule,
     BrokerModule,
+    AuthModule,
     HealthModule,
     QuestionModule,
     DungeonModule,
